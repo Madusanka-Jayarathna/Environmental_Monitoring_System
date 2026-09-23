@@ -1,0 +1,26 @@
+### OS Files ###
+.DS_Store		: mac
+Thumbs.db		: Thumbs.db
+
+### Text Editors & IDEs ###
+.vscode/
+.idea/
+!.vscode/extensions.json
+*.swp
+
+### Logs and Caches ###
+*.log
+logs/
+.cache/
+
+### Build & Output Directories ###
+bin/
+obj/
+dist/
+build/
+
+### Environment Variables & Secrets ###
+.env
+venv/
+.venv/
+env/
