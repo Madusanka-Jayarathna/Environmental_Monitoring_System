@@ -1,12 +1,16 @@
 ### OS Files ###
-.DS_Store		: mac
-Thumbs.db		: Thumbs.db
+.DS_Store		
+.DS_Store/
+.DS_Store*
+Thumbs.db		
 
 ### Text Editors & IDEs ###
 .vscode/
 .idea/
 !.vscode/extensions.json
 *.swp
+*.swo
+dependencies.lock
 
 ### Logs and Caches ###
 *.log
@@ -18,9 +22,13 @@ bin/
 obj/
 dist/
 build/
+**/build/
+
 
 ### Environment Variables & Secrets ###
 .env
 venv/
 .venv/
 env/
+sdkconfig
+sdkconfig.*
