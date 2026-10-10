@@ -7,9 +7,10 @@
 #include <vector>
 
 namespace FIRMWARE {
-inline constexpr std::string_view TAG = "ComponentTests";
+namespace TEST {
+    inline constexpr std::string_view TAG = "ComponentTests";
 
-class ComponentTests {
+class ESP32Tests {
 public:
     void runBlinkTest( void );
 
@@ -22,6 +23,7 @@ private:
     bool    verbose = false;
 
 };
+} // namespace TEST
 } // namespace FIRMWARE
 
 

@@ -1,0 +1,12 @@
+idf_component_register(
+    SRCS 
+        "testMain/private/TestFirmware.cpp"
+        "testComponents/private/ESP32Tests.cpp"
+    INCLUDE_DIRS 
+        "testMain/public"
+    PRIV_INCLUDE_DIRS
+        "."
+    PRIV_REQUIRES
+        driver 
+        led_strip
+    )

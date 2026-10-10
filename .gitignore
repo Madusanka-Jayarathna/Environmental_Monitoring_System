@@ -23,6 +23,7 @@ obj/
 dist/
 build/
 **/build/
+managed_components/
 
 
 ### Environment Variables & Secrets ###
