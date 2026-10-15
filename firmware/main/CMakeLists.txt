@@ -1,8 +1,11 @@
+# Copyright (c) 2026 Madusanka Jayarathna. All rights reserved.
+# Use of this source code is governed by the MIT license.
+
 idf_component_register(
     SRCS 
         "main.cpp"
                     
-    INCLUDE_DIRS 
+    PRIV_INCLUDE_DIRS 
         "."
     
     REQUIRES 

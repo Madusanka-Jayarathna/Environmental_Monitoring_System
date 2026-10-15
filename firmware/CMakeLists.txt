@@ -1,5 +1,6 @@
-# The following five lines of boilerplate have to be in your project's
-# CMakeLists in this exact order for cmake to work correctly
+# Copyright (c) 2026 Madusanka Jayarathna. All rights reserved.
+# Use of this source code is governed by the MIT license.
+
 cmake_minimum_required(VERSION 3.16)
 
 set(CMAKE_CXX_STANDARD 17)
