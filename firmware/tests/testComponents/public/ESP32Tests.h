@@ -28,14 +28,25 @@ public:
     };
 
 public:
-    bool runBlinkTest( void );
+    ESP32Tests();
+    bool run(void);
+    
 
 private:
+    bool runBlinkTest( void );
+
+
     TargetChip checkChipInfo();
-    bool blinkBoardLED(const TargetChip &chip);
+    bool blinkBoardLED(void);
+    bool runBME280Test(void);
+    bool runSoilSensorTest(void);
+
     bool blink(const led_strip_handle_t &led_strip);
-    bool blink(const TargetChip &chip);
+    bool blink();
     bool configurePin(const uint8_t pin, const PortDir dir);
+
+private:
+    ESP32Tests::TargetChip          _chip;
 
 };
 } // namespace COMPTEST

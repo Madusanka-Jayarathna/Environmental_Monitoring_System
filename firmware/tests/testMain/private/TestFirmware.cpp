@@ -30,7 +30,7 @@ TestFirmware::runComponentTest(void) const {
     if(_opt._runComponentTest) {
         ESP_LOGI(TAG_FIRMWARE.data(), "runComponentTest - Testing start");
         FIRMWARE::TEST::COMPTEST::ESP32Tests esp32Tests;
-        isRunSuccess = esp32Tests.runBlinkTest() ? isRunSuccess : false; 
+        isRunSuccess = esp32Tests.run();// ? isRunSuccess : false;
     } else {
         ESP_LOGW(TAG_FIRMWARE.data(), "runComponentTest - Test didn't run because user disabled");
     }
