@@ -14,6 +14,7 @@ app_main(void)
 
 
     FIRMWARE::FirmwareMain firmware;
+    //firmware.opt()._serialRun = true;
     firmware.run();
 
     return;

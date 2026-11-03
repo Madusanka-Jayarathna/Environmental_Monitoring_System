@@ -71,10 +71,10 @@ public:
 
     void run();
     void setCalibrationConfig(const LinearCalibrationConfig &userConfig);
+    bool readBME280Data(float *temp, float *press, float *hum);
 
 private:
     void initBME280();
-    bool readBME280Data(float *temp, float *press, float *hum);
     bool readCalibration(void);
 
     float compensateTemperature(int32_t adcT);
