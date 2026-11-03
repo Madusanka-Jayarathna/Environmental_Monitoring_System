@@ -19,7 +19,7 @@ TestFirmware::runFirmwareTest(void) const {
     }
 
     if(isRunSuccess) {
-        ESP_LOGI(TAG_FIRMWARE.data(), "runFirmwareTest - All Firmware Tests are PASSED");
+        ESP_LOGI(TAG_ESP.data(), "runFirmwareTest - All Firmware Tests are PASSED");
     }
     return isRunSuccess;
 }
@@ -28,15 +28,21 @@ bool
 TestFirmware::runComponentTest(void) const {
     bool isRunSuccess = true;
     if(_opt._runComponentTest) {
-        ESP_LOGI(TAG_FIRMWARE.data(), "runComponentTest - Testing start");
+        ESP_LOGI(TAG_ESP.data(), "runComponentTest - Testing start");
+        
         FIRMWARE::TEST::COMPTEST::ESP32Tests esp32Tests;
-        isRunSuccess = esp32Tests.run();// ? isRunSuccess : false;
+        esp32Tests.opt()._runBlinkTest      = true;
+        esp32Tests.opt()._runBME280Test     = true;
+        esp32Tests.opt()._runSoilSensorTest = false;
+        esp32Tests.opt()._runSDCardTest     = false;
+        esp32Tests.opt()._runOLEDTest       = false;
+        isRunSuccess = esp32Tests.run();
     } else {
-        ESP_LOGW(TAG_FIRMWARE.data(), "runComponentTest - Test didn't run because user disabled");
+        ESP_LOGW(TAG_ESP.data(), "runComponentTest - Test didn't run because user disabled");
     }
 
     if(isRunSuccess) {
-        ESP_LOGI(TAG_FIRMWARE.data(), "runComponentTest - All Component Tests are PASSED");
+        ESP_LOGI(TAG_ESP.data(), "runComponentTest - All Component Tests are PASSED");
     }
     return isRunSuccess;
 }

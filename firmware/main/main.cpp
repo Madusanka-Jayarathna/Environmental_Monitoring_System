@@ -3,13 +3,18 @@
 
 #include <stdio.h>
 #include "TestFirmware.h"
+#include "FirmwareMain.h"
 
 extern "C" void
 app_main(void)
 {
-    FIRMWARE::TEST::TestFirmware tests;
-    tests.opt()._runComponentTest = true;
-    tests.runFirmwareTest();
+    //FIRMWARE::TEST::TestFirmware tests;
+    //tests.opt()._runComponentTest = true;
+    //tests.runFirmwareTest();
+
+
+    FIRMWARE::FirmwareMain firmware;
+    firmware.run();
 
     return;
 }

@@ -8,7 +8,7 @@
 
 namespace FIRMWARE {
 namespace TEST {
-    inline constexpr std::string_view TAG_FIRMWARE = "FirmwareTest";
+    inline constexpr std::string_view TAG_ESP = "FirmwareTests";
 class TestFirmware {
 public:
     struct Option {

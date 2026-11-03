@@ -1,0 +1,7 @@
+# Copyright (c) 2026 Madusanka Jayarathna. All rights reserved.
+# Use of this source code is governed by the MIT license.
+
+dependencies:
+  espressif/led_strip: "^2.5.0"
+  idf:
+    version: ">=5.2"

@@ -12,5 +12,6 @@ idf_component_register(
     PRIV_REQUIRES
         driver 
         esp_adc
+        fatfs
         led_strip
     )
