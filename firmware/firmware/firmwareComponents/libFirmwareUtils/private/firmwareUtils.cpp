@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT license.
 
 #include "esp_log.h"
+#include "esp_adc/adc_oneshot.h"
 #include "driver/i2c_master.h"
 #include "firmwareComponents/libFirmwareUtils/public/firmwareUtils.h"
 
@@ -10,11 +11,12 @@ namespace UTILS {
 
 namespace {
 constexpr char TAG[] = "FirmwareUtils";
+constexpr adc_unit_t kAdcUnit = ADC_UNIT_1;
 }
 
 // --- Hardware & I2C Pin Setup ---
-#define I2C_MASTER_SCL_IO           22      /*!< GPIO number for I2C SCL[span_7](start_span)[span_7](end_span) */
-#define I2C_MASTER_SDA_IO           21      /*!< GPIO number for I2C SDA[span_8](start_span)[span_8](end_span) */
+#define I2C_MASTER_SCL_IO           22      /*!< GPIO number for I2C SCL */
+#define I2C_MASTER_SDA_IO           21      /*!< GPIO number for I2C SDA */
 
 bool 
 FirmwareUtils::initI2CBus(i2c_master_bus_handle_t& busHandle) {
@@ -36,6 +38,24 @@ FirmwareUtils::initI2CBus(i2c_master_bus_handle_t& busHandle) {
 
     ESP_LOGI(TAG, "\ninitI2CBus - I2C Bus Initialization Succes");
     return true; 
+}
+
+bool
+FirmwareUtils::initADC(adc_oneshot_unit_handle_t& adcHandle) {
+    ESP_LOGI(TAG, "\ninitADC - ADC Unit Initialization Starting");
+
+    adc_oneshot_unit_init_cfg_t initConfig = {};
+    initConfig.unit_id = kAdcUnit;
+    initConfig.ulp_mode = ADC_ULP_MODE_DISABLE;
+
+    esp_err_t err = adc_oneshot_new_unit(&initConfig, &adcHandle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "initADC - Failed to create ADC unit: %s", esp_err_to_name(err));
+        return false;
+    }
+
+    ESP_LOGI(TAG, "\ninitADC - ADC Unit Initialization Success");
+    return true;
 }
 
 } // namespace UTILS

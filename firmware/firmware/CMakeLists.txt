@@ -6,6 +6,7 @@ idf_component_register(
         "firmwareMain/private/FirmwareMain.cpp"
         "firmwareComponents/libBME280/private/BME280Firmware.cpp"
         "firmwareComponents/libFirmwareUtils/private/firmwareUtils.cpp"
+        "firmwareComponents/libSoilMoisture/private/SoilMoistureFirmware.cpp"
     INCLUDE_DIRS 
         "firmwareMain/public"
     PRIV_INCLUDE_DIRS
