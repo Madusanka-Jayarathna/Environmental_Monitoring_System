@@ -37,6 +37,8 @@ services:
     restart: unless-stopped
     ports:
       - "8000:8000"
+    volumes:
+      - ./tests:/app/tests:ro
     environment:
       DATABASE_URL: postgresql://env_user:env_password@postgres:5432/env_monitoring
       MQTT_BROKER_HOST: mosquitto
