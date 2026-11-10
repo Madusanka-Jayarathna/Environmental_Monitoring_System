@@ -22,6 +22,7 @@ bin/
 obj/
 dist/
 build/
+firmware_old/
 **/build/
 managed_components/
 

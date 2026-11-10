@@ -2,20 +2,28 @@
 // Use of this source code is governed by the MIT license.
 
 #include <stdio.h>
-#include "TestFirmware.h"
-#include "FirmwareMain.h"
+#include "components/libComponentHandler/public/ComponentHandler.h"
+#include "tests/componentTests/ESP32Tests.h"
 
 extern "C" void
 app_main(void)
 {
-    //FIRMWARE::TEST::TestFirmware tests;
-    //tests.opt()._runComponentTest = true;
-    //tests.runFirmwareTest();
+    /*
+    RUN COMPONENT HARDWARE TESTS (Check peripherals & connection sanity)
+    */
 
+    FIRMWARE::TEST::COMPTEST::ESP32Tests componentTests;
+    componentTests.opt()._runBlinkTest      = false;
+    componentTests.opt()._runBME280Test     = true;
+    componentTests.opt()._runSoilSensorTest = true;
+    componentTests.opt()._runSDCardTest     = true;
+    componentTests.opt()._runOLEDTest       = true;
+    componentTests.run();
 
-    FIRMWARE::FirmwareMain firmware;
-    //firmware.opt()._serialRun = true;
-    firmware.run();
-
-    return;
+    /*
+    MAIN FIRMWARE PIPELINE
+    */
+    //FIRMWARE::ComponentHandler componentHandler;
+    ////componentHandler.opt()._serialRun = true;
+    //componentHandler.run();
 }

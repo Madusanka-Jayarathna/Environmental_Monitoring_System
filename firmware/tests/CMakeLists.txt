@@ -3,15 +3,14 @@
 
 idf_component_register(
     SRCS 
-        "testMain/private/TestFirmware.cpp"
-        "testComponents/private/ESP32Tests.cpp"
+        "componentTests/ESP32Tests.cpp"
     INCLUDE_DIRS 
-        "testMain/public"
-    PRIV_INCLUDE_DIRS
-        "."
+        "componentTests"
+        "functionalityTests"
     PRIV_REQUIRES
         driver 
         esp_adc
         fatfs
         led_strip
+        unity
     )
