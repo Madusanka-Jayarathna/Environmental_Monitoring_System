@@ -4,7 +4,8 @@
 #include "esp_log.h"
 #include "esp_adc/adc_oneshot.h"
 #include "driver/i2c_master.h"
-#include "components/libSensors/public/firmwareUtils.h"
+#include "components/libUtils/public/firmwareUtils.h"
+#include "components/libUtils/public/defines.h"
 
 namespace FIRMWARE {
 namespace UTILS {
@@ -13,10 +14,6 @@ namespace {
 constexpr char TAG[] = "FirmwareUtils";
 constexpr adc_unit_t kAdcUnit = ADC_UNIT_1;
 }
-
-// --- Hardware & I2C Pin Setup ---
-#define I2C_MASTER_SCL_IO           22      /*!< GPIO number for I2C SCL */
-#define I2C_MASTER_SDA_IO           21      /*!< GPIO number for I2C SDA */
 
 bool 
 FirmwareUtils::initI2CBus(i2c_master_bus_handle_t& busHandle) {

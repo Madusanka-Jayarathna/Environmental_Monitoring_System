@@ -9,6 +9,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "components/libSensors/public/BME280Firmware.h"
+#include "components/libUtils/public/defines.h"
 
 namespace FIRMWARE {
 namespace BME280 {
@@ -35,24 +36,6 @@ BME280Firmware::LinearCoefficients calculateAxisCoefficients(const BME280Firmwar
 }
 }
 
-// --- Hardware & I2C Pin Setup ---
-#define I2C_MASTER_SCL_IO           22      /*!< GPIO number for I2C SCL */
-#define I2C_MASTER_SDA_IO           21      /*!< GPIO number for I2C SDA */
-#define I2C_MASTER_NUM              0       /*!< I2C port number */
-#define I2C_MASTER_FREQ_HZ          100000  /*!< I2C master clock frequency */
-#define BME280_I2C_ADDR             0x76    /*!< Default I2C address for BME280 */
-
-// --- BME280 Registers ---
-#define BME280_REG_CHIP_ID          0xD0
-#define BME280_CHIP_ID_VAL          0x60
-#define BME280_REG_RESET            0xE0
-#define BME280_REG_CTRL_HUM         0xF2
-#define BME280_REG_STATUS           0xF3
-#define BME280_REG_CTRL_MEAS        0xF4
-#define BME280_REG_CONFIG           0xF5
-#define BME280_REG_PRESS_MSB        0xF7
-#define BME280_REG_CALIB00          0x88
-#define BME280_REG_CALIB26          0xE1
 
 BME280Firmware::BME280Firmware(i2c_master_bus_handle_t i2cBusHandle):
     _i2cBusHandle(i2cBusHandle),

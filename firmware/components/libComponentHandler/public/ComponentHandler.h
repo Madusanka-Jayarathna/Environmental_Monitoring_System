@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 struct i2c_master_bus_t;
@@ -31,6 +32,7 @@ public:
     struct Option {
         Option() = default;
         bool _serialRun = false;
+        size_t _maxRingFileBytes = 1024 * 1024;
     };
 
 public:
@@ -43,7 +45,7 @@ private:
     bool initADC();
 
     static void sensorTask(void *pvParameters);
-    static void loggerTask(void *pvParameters);
+    static void storageTask(void *pvParameters);
 
 private:
     i2c_master_bus_handle_t         _i2cBusHandle = nullptr;

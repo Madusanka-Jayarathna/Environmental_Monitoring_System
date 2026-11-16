@@ -2,9 +2,10 @@
 // Use of this source code is governed by the MIT license.
 
 #include "components/libComponentHandler/public/ComponentHandler.h"
-#include "components/libSensors/public/firmwareUtils.h"
+#include "components/libUtils/public/firmwareUtils.h"
 #include "components/libSensors/public/BME280Firmware.h"
 #include "components/libSensors/public/SoilMoistureFirmware.h"
+#include "components/libStorage/public/Storage.h"
 
 #include <cinttypes>
 #include <cstdio>
@@ -20,18 +21,17 @@ namespace {
 constexpr const char *TAG = "ComponentHandler";
 constexpr size_t kQueueLength = 10;
 
-// Sensor context to pass to sensor task
-struct SensorTaskContext {
+struct TaskContext {
     FIRMWARE::BME280::BME280Firmware *bme280;
     FIRMWARE::SOIL_MOISTURE::SoilMoistureFirmware *soilMoisture;
+    FIRMWARE::STORAGE::Storage *storage;
     QueueHandle_t sensorQueue;
 };
-}
+} // namespace
 
 void
 ComponentHandler::sensorTask(void *pvParameters) {
-    auto *ctx = static_cast<SensorTaskContext *>(pvParameters);
-    uint32_t seq = 0;
+    auto *ctx = static_cast<TaskContext *>(pvParameters);
     TickType_t lastWakeTime = xTaskGetTickCount();
     const TickType_t period = pdMS_TO_TICKS(1000); // 1 Hz (1 second)
 
@@ -39,7 +39,7 @@ ComponentHandler::sensorTask(void *pvParameters) {
         vTaskDelayUntil(&lastWakeTime, period);
 
         reading_t reading = {};
-        reading.seq = seq++;
+        reading.seq = (ctx->storage != nullptr) ? ctx->storage->nextSeq() : 0;
         reading.timestamp_ms = static_cast<uint32_t>(esp_timer_get_time() / 1000ULL);
         reading.flags = 0;
 
@@ -69,13 +69,16 @@ ComponentHandler::sensorTask(void *pvParameters) {
 }
 
 void
-ComponentHandler::loggerTask(void *pvParameters) {
-    auto sensorQueue = static_cast<QueueHandle_t>(pvParameters);
+ComponentHandler::storageTask(void *pvParameters) {
+    auto *ctx = static_cast<TaskContext *>(pvParameters);
     reading_t reading = {};
 
     while (true) {
-        if (xQueueReceive(sensorQueue, &reading, portMAX_DELAY) == pdPASS) {
-            std::printf("reading: seq=%" PRIu32 ", timestamp_ms=%" PRIu32 ", temp=%.2f C, hum=%.2f %%, pressure=%.2f hPa, moisture=%.2f %%, flags=0x%04" PRIX32 "\n",
+        if (xQueueReceive(ctx->sensorQueue, &reading, portMAX_DELAY) == pdPASS) {
+            const bool saved = (ctx->storage != nullptr) && ctx->storage->appendReading(reading);
+
+            std::printf("[%s] seq=%" PRIu32 ", timestamp_ms=%" PRIu32 ", temp=%.2f C, hum=%.2f %%, pressure=%.2f hPa, moisture=%.2f %%, flags=0x%04" PRIX32 "\n",
+                        saved ? "SD_OK" : "SD_ERR",
                         reading.seq,
                         reading.timestamp_ms,
                         reading.temp,
@@ -89,7 +92,7 @@ ComponentHandler::loggerTask(void *pvParameters) {
 }
 
 void
-ComponentHandler::run () {
+ComponentHandler::run() {
     if(!initI2CConnection()) {
         return;
     }
@@ -115,22 +118,31 @@ ComponentHandler::run () {
         return;
     }
 
-    // Allocate sensor instances
+    //FIRMWARE::STORAGE::Storage::Config storageCfg;
+    //storageCfg.maxFileSize = opt()._maxRingFileBytes;
+
+    static FIRMWARE::STORAGE::Storage storage;
+    if (!storage.init()) {
+        ESP_LOGE(TAG, "run - Failed to initialize SD ring buffer storage");
+        return;
+    }
+
     static FIRMWARE::BME280::BME280Firmware bme280(_i2cBusHandle);
     static FIRMWARE::SOIL_MOISTURE::SoilMoistureFirmware soilMoisture(_adcHandle);
 
-    static SensorTaskContext taskCtx = {
-        .bme280 = &bme280,
+    static TaskContext taskCtx = {
+        .bme280       = &bme280,
         .soilMoisture = &soilMoisture,
-        .sensorQueue = _sensorQueue
+        .storage      = &storage,
+        .sensorQueue  = _sensorQueue
     };
 
-    ESP_LOGI(TAG, "Creating sensor_task and logger_task...");
+    ESP_LOGI(TAG, "Creating storage_task and sensor_task...");
+    // Note: 6144 stack for storage_task because FatFs + VFS + stdio file ops use more stack than printf
+    xTaskCreatePinnedToCore(storageTask, "storage_task", 6144, &taskCtx, 4, nullptr, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(sensorTask, "sensor_task", 4096, &taskCtx, 5, nullptr, tskNO_AFFINITY);
-    xTaskCreatePinnedToCore(loggerTask, "logger_task", 4096, _sensorQueue, 4, nullptr, tskNO_AFFINITY);
     ESP_LOGI(TAG, "Tasks started successfully");
 
-    // Main task can block indefinitely or sleep
     while(true) {
         vTaskDelay(portMAX_DELAY);
     }
