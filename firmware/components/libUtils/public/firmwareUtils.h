@@ -1,5 +1,7 @@
 #pragma once 
 
+#include <cstdint>
+
 struct i2c_master_bus_t;
 using i2c_master_bus_handle_t = i2c_master_bus_t*;
 
@@ -18,6 +20,10 @@ public:
 
     static bool initI2CBus(i2c_master_bus_handle_t& busHandle);
     static bool initADC(adc_oneshot_unit_handle_t& adcHandle);
+    static bool initNVS();
+
+    static bool initStatusPin(uint8_t p, bool isOutput);
+    static void setStatusPin(uint8_t p, bool isHigh);
 
 private:
 

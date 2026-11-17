@@ -6,7 +6,7 @@
 #include "components/libSensors/public/BME280Firmware.h"
 #include "components/libSensors/public/SoilMoistureFirmware.h"
 #include "components/libStorage/public/Storage.h"
-
+#include "components/libNetwork/public/WifiManager.h"
 #include <cinttypes>
 #include <cstdio>
 #include "esp_log.h"
@@ -25,6 +25,7 @@ struct TaskContext {
     FIRMWARE::BME280::BME280Firmware *bme280;
     FIRMWARE::SOIL_MOISTURE::SoilMoistureFirmware *soilMoisture;
     FIRMWARE::STORAGE::Storage *storage;
+    FIRMWARE::NETWORK::WifiManager *wifiManager;
     QueueHandle_t sensorQueue;
 };
 } // namespace
@@ -92,6 +93,15 @@ ComponentHandler::storageTask(void *pvParameters) {
 }
 
 void
+ComponentHandler::wifiTask(void *pvParameters) {
+    auto *ctx = static_cast<TaskContext *>(pvParameters);
+    if (ctx != nullptr && ctx->wifiManager != nullptr) {
+        ctx->wifiManager->runLoop();
+    }
+    vTaskDelete(nullptr); 
+}
+
+void
 ComponentHandler::run() {
     if(!initI2CConnection()) {
         return;
@@ -99,7 +109,11 @@ ComponentHandler::run() {
 
     if(!initADC()) {
         return;
-    } 
+    }
+    
+    if(!initNVS()) {
+        return;
+    }
 
     if(opt()._serialRun) {
         FIRMWARE::BME280::BME280Firmware bme280(_i2cBusHandle);
@@ -118,12 +132,18 @@ ComponentHandler::run() {
         return;
     }
 
-    //FIRMWARE::STORAGE::Storage::Config storageCfg;
-    //storageCfg.maxFileSize = opt()._maxRingFileBytes;
-
     static FIRMWARE::STORAGE::Storage storage;
+    storage.opt()._maxFileSize = MAX_FILE_SIZE;
     if (!storage.init()) {
         ESP_LOGE(TAG, "run - Failed to initialize SD ring buffer storage");
+        return;
+    }
+
+    static FIRMWARE::NETWORK::WifiManager wifiManager;
+    wifiManager.opt()._ssid = WIFI_SSID;
+    wifiManager.opt()._password = WIFI_PASSWORD;
+    if (!wifiManager.init()) {
+        ESP_LOGE(TAG, "run - Failed to initialize Wi-Fi manager");
         return;
     }
 
@@ -134,11 +154,12 @@ ComponentHandler::run() {
         .bme280       = &bme280,
         .soilMoisture = &soilMoisture,
         .storage      = &storage,
+        .wifiManager  = &wifiManager,
         .sensorQueue  = _sensorQueue
     };
 
-    ESP_LOGI(TAG, "Creating storage_task and sensor_task...");
-    // Note: 6144 stack for storage_task because FatFs + VFS + stdio file ops use more stack than printf
+    ESP_LOGI(TAG, "Creating wifi_task, storage_task, and sensor_task...");
+    xTaskCreatePinnedToCore(wifiTask, "wifi_task", 4096, &taskCtx, 5, nullptr, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(storageTask, "storage_task", 6144, &taskCtx, 4, nullptr, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(sensorTask, "sensor_task", 4096, &taskCtx, 5, nullptr, tskNO_AFFINITY);
     ESP_LOGI(TAG, "Tasks started successfully");
@@ -156,6 +177,11 @@ ComponentHandler::initI2CConnection() {
 bool
 ComponentHandler::initADC() {
     return FIRMWARE::UTILS::FirmwareUtils::initADC(_adcHandle);
+}
+
+bool
+ComponentHandler::initNVS() {
+    return FIRMWARE::UTILS::FirmwareUtils::initNVS();
 }
 
 } // namespace FIRMWARE

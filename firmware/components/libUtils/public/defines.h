@@ -1,6 +1,11 @@
 
 namespace FIRMWARE {
 
+// ---- WIFI Setup  ----
+#define WIFI_SSID                   "madusanka_nova5T"
+#define WIFI_PASSWORD               "12345678"
+#define WIFI_INDIC_PIN              2
+
 // --- Hardware & SPI Pin Setup ---
 #define SPI_MISO_PIN                19          
 #define SPI_MOSI_PIN                23       

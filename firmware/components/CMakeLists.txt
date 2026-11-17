@@ -8,6 +8,7 @@ idf_component_register(
         "libSensors/private/SoilMoistureFirmware.cpp"
         "libUtils/private/firmwareUtils.cpp"
         "libStorage/private/Storage.cpp"
+        "libNetwork/private/WifiManager.cpp"
     INCLUDE_DIRS 
         ".."
         "."
@@ -15,12 +16,16 @@ idf_component_register(
         "libSensors/public"
         "libUtils/public"
         "libStorage/public"
+        "libNetwork/public"
     PRIV_INCLUDE_DIRS
         "."
     PRIV_REQUIRES
         driver
         esp_adc
+        esp_event
+        esp_netif
         esp_timer
+        esp_wifi
         fatfs
         led_strip
         nvs_flash

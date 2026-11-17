@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include "components/libUtils/public/defines.h"
 
 struct i2c_master_bus_t;
 using i2c_master_bus_handle_t = i2c_master_bus_t*;
@@ -31,8 +32,10 @@ class ComponentHandler {
 public:
     struct Option {
         Option() = default;
-        bool _serialRun = false;
-        size_t _maxRingFileBytes = 1024 * 1024;
+        bool        _serialRun        = false;
+        size_t      _maxRingFileBytes = MAX_FILE_SIZE;
+        const char *_wifiSsid         = WIFI_SSID;
+        const char *_wifiPassword     = WIFI_PASSWORD;
     };
 
 public:
@@ -43,9 +46,11 @@ public:
 private:
     bool initI2CConnection();
     bool initADC();
+    bool initNVS();
 
     static void sensorTask(void *pvParameters);
     static void storageTask(void *pvParameters);
+    static void wifiTask(void *pvParameters);
 
 private:
     i2c_master_bus_handle_t         _i2cBusHandle = nullptr;

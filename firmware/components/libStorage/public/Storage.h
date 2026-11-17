@@ -5,14 +5,19 @@
 
 #include <cstddef>
 #include <cstdint>
+#include "components/libUtils/public/defines.h"
 
 namespace FIRMWARE {
 
-struct reading_t; // Forward-declared from ComponentHandler.h
-
+struct reading_t;
 namespace STORAGE {
 
 class Storage {
+public:
+    struct Option {
+        Option()                = default;
+        size_t _maxFileSize     = MAX_FILE_SIZE; // 1MB
+    };
 public:
     Storage();
     ~Storage();
@@ -20,6 +25,9 @@ public:
     // Non-copyable (owns hardware SPI & file handle)
     Storage(const Storage &) = delete;
     Storage &operator=(const Storage &) = delete;
+
+    Option& opt() {return _opt;}
+    const Option& opt() const {return _opt; }
 
     bool init();
     uint32_t nextSeq();
@@ -36,12 +44,13 @@ private:
     void rotateIfNeeded();
 
 private:
-    uint32_t _nvsHandle = 0;
-    uint32_t _nextSeq = 0;
-    uint32_t _persistedSeq = 0;
-    bool _isMounted = false;
-    void *_activeFile = nullptr;
-    void *_card = nullptr;
+    Option          _opt;
+    uint32_t        _nvsHandle = 0;
+    uint32_t        _nextSeq = 0;
+    uint32_t        _persistedSeq = 0;
+    bool            _isMounted = false;
+    void            *_activeFile = nullptr;
+    void            *_card = nullptr;
 };
 
 } // namespace STORAGE

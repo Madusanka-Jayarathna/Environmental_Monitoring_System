@@ -74,22 +74,8 @@ Storage::init() {
 
 bool
 Storage::initNvs() {
-    esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_LOGW(TAG, "initNvs - Erasing NVS partition");
-        if (nvs_flash_erase() != ESP_OK) {
-            return false;
-        }
-        err = nvs_flash_init();
-    }
-
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "initNvs - nvs_flash_init failed: %s", esp_err_to_name(err));
-        return false;
-    }
-
     nvs_handle_t handle = 0;
-    err = nvs_open(kNvsNs, NVS_READWRITE, &handle);
+    esp_err_t err = nvs_open(kNvsNs, NVS_READWRITE, &handle);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "initNvs - nvs_open failed: %s", esp_err_to_name(err));
         return false;
@@ -211,12 +197,12 @@ Storage::rotateIfNeeded() {
         return;
     }
 
-    if (static_cast<size_t>(st.st_size) < static_cast<size_t>(MAX_FILE_SIZE)) {
+    if (static_cast<size_t>(st.st_size) < static_cast<size_t>(opt()._maxFileSize)) {
         return;
     }
 
     ESP_LOGW(TAG, "rotateIfNeeded - Rotating ring buffer (%ld >= %zu bytes)",
-             static_cast<long>(st.st_size), static_cast<size_t>(MAX_FILE_SIZE));
+             static_cast<long>(st.st_size), static_cast<size_t>(opt()._maxFileSize));
 
     if (_activeFile != nullptr) {
         auto *activeFile = static_cast<FILE *>(_activeFile);
