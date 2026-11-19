@@ -9,6 +9,7 @@ idf_component_register(
         "libUtils/private/firmwareUtils.cpp"
         "libStorage/private/Storage.cpp"
         "libNetwork/private/WifiManager.cpp"
+        "libNetwork/private/MqttClient.cpp"
     INCLUDE_DIRS 
         ".."
         "."
@@ -28,5 +29,7 @@ idf_component_register(
         esp_wifi
         fatfs
         led_strip
+        mqtt
         nvs_flash
+        json
     )

@@ -7,8 +7,10 @@
 #include "components/libSensors/public/SoilMoistureFirmware.h"
 #include "components/libStorage/public/Storage.h"
 #include "components/libNetwork/public/WifiManager.h"
+#include "components/libNetwork/public/MqttClient.h"
 #include <cinttypes>
 #include <cstdio>
+#include "cJSON.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -26,7 +28,9 @@ struct TaskContext {
     FIRMWARE::SOIL_MOISTURE::SoilMoistureFirmware *soilMoisture;
     FIRMWARE::STORAGE::Storage *storage;
     FIRMWARE::NETWORK::WifiManager *wifiManager;
+    FIRMWARE::NETWORK::MqttClient *mqttClient;
     QueueHandle_t sensorQueue;
+    QueueHandle_t publishQueue;
 };
 } // namespace
 
@@ -88,6 +92,11 @@ ComponentHandler::storageTask(void *pvParameters) {
                         reading.moisture,
                         reading.flags);
             std::fflush(stdout);
+
+            // Forward to live MQTT queue after local persistence (non-blocking)
+            if (ctx->publishQueue != nullptr) {
+                xQueueSend(ctx->publishQueue, &reading, 0);
+            }
         }
     }
 }
@@ -99,6 +108,59 @@ ComponentHandler::wifiTask(void *pvParameters) {
         ctx->wifiManager->runLoop();
     }
     vTaskDelete(nullptr); 
+}
+
+void
+ComponentHandler::commTask(void *pvParameters) {
+    auto *ctx = static_cast<TaskContext *>(pvParameters);
+    if (ctx == nullptr || ctx->wifiManager == nullptr || ctx->mqttClient == nullptr) {
+        vTaskDelete(nullptr);
+        return;
+    }
+
+    ESP_LOGI(TAG, "comm_task started -> waiting for Wi-Fi connection...");
+    ctx->wifiManager->waitForConnection(UINT32_MAX);
+    ctx->mqttClient->start();
+
+    reading_t reading = {};
+    while (true) {
+        // Wait for next buffered reading (1 s timeout so we can monitor link state)
+        if (xQueueReceive(ctx->publishQueue, &reading, pdMS_TO_TICKS(1000)) != pdPASS) {
+            continue;
+        }
+
+        if (!ctx->wifiManager->isConnected() || !ctx->mqttClient->isConnected()) {
+            ESP_LOGD(TAG, "comm_task - Offline, skipping live publish for seq=%" PRIu32 " (safely on SD)", reading.seq);
+            continue;
+        }
+
+        cJSON *root = cJSON_CreateObject();
+        if (root == nullptr) {
+            continue;
+        }
+
+        cJSON_AddStringToObject(root, "node", ctx->mqttClient->opt()._nodeId);
+        cJSON_AddNumberToObject(root, "seq", static_cast<double>(reading.seq));
+        cJSON_AddNumberToObject(root, "temp", static_cast<double>(reading.temp));
+        cJSON_AddNumberToObject(root, "hum", static_cast<double>(reading.hum));
+        cJSON_AddNumberToObject(root, "pressure", static_cast<double>(reading.pressure));
+        cJSON_AddNumberToObject(root, "moisture", static_cast<double>(reading.moisture));
+        cJSON_AddBoolToObject(root, "anomaly", (reading.flags & (1 << 2)) != 0);
+        cJSON_AddNumberToObject(root, "score", 0.0);
+
+        char *jsonStr = cJSON_PrintUnformatted(root);
+        cJSON_Delete(root);
+
+        if (jsonStr != nullptr) {
+            const int msgId = ctx->mqttClient->publishJson(jsonStr, 1);
+            if (msgId >= 0) {
+                ESP_LOGI(TAG, "MQTT published seq=%" PRIu32 " (msg_id=%d)", reading.seq, msgId);
+            } else {
+                ESP_LOGW(TAG, "MQTT publish failed for seq=%" PRIu32, reading.seq);
+            }
+            cJSON_free(jsonStr);
+        }
+    }
 }
 
 void
@@ -127,23 +189,32 @@ ComponentHandler::run() {
     }
 
     _sensorQueue = xQueueCreate(kQueueLength, sizeof(reading_t));
-    if (_sensorQueue == nullptr) {
-        ESP_LOGE(TAG, "run - Failed to create sensor queue");
+    _publishQueue = xQueueCreate(kQueueLength, sizeof(reading_t));
+    if (_sensorQueue == nullptr || _publishQueue == nullptr) {
+        ESP_LOGE(TAG, "run - Failed to create FreeRTOS queues");
         return;
     }
 
     static FIRMWARE::STORAGE::Storage storage;
-    storage.opt()._maxFileSize = MAX_FILE_SIZE;
+    storage.opt()._maxFileSize = opt()._maxRingFileBytes;
     if (!storage.init()) {
         ESP_LOGE(TAG, "run - Failed to initialize SD ring buffer storage");
         return;
     }
 
     static FIRMWARE::NETWORK::WifiManager wifiManager;
-    wifiManager.opt()._ssid = WIFI_SSID;
-    wifiManager.opt()._password = WIFI_PASSWORD;
+    wifiManager.opt()._ssid = opt()._wifiSsid;
+    wifiManager.opt()._password = opt()._wifiPassword;
     if (!wifiManager.init()) {
         ESP_LOGE(TAG, "run - Failed to initialize Wi-Fi manager");
+        return;
+    }
+
+    static FIRMWARE::NETWORK::MqttClient mqttClient;
+    mqttClient.opt()._mqttBrokerURL = opt()._mqttBrokerURL;
+    mqttClient.opt()._nodeId = opt()._nodeId;
+    if (!mqttClient.init()) {
+        ESP_LOGE(TAG, "run - Failed to initialize MQTT client");
         return;
     }
 
@@ -155,13 +226,16 @@ ComponentHandler::run() {
         .soilMoisture = &soilMoisture,
         .storage      = &storage,
         .wifiManager  = &wifiManager,
-        .sensorQueue  = _sensorQueue
+        .mqttClient   = &mqttClient,
+        .sensorQueue  = _sensorQueue,
+        .publishQueue = _publishQueue
     };
 
-    ESP_LOGI(TAG, "Creating wifi_task, storage_task, and sensor_task...");
+    ESP_LOGI(TAG, "Creating wifi_task, storage_task, sensor_task, and comm_task...");
     xTaskCreatePinnedToCore(wifiTask, "wifi_task", 4096, &taskCtx, 5, nullptr, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(storageTask, "storage_task", 6144, &taskCtx, 4, nullptr, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(sensorTask, "sensor_task", 4096, &taskCtx, 5, nullptr, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(commTask, "comm_task", 4096, &taskCtx, 4, nullptr, tskNO_AFFINITY);
     ESP_LOGI(TAG, "Tasks started successfully");
 
     while(true) {

@@ -1,9 +1,12 @@
 
 namespace FIRMWARE {
 
+// ---- MQTT ---
+#define MQTT_BROKER_URL             "mqtt://192.168.1.12:1883"
+#define MQTT_NODE                   "node1"
 // ---- WIFI Setup  ----
-#define WIFI_SSID                   "madusanka_nova5T"
-#define WIFI_PASSWORD               "12345678"
+#define WIFI_SSID                   "SLT-Fiber-2.4G_77a8"
+#define WIFI_PASSWORD               "back4262"
 #define WIFI_INDIC_PIN              2
 
 // --- Hardware & SPI Pin Setup ---

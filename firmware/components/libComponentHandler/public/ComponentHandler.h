@@ -36,6 +36,8 @@ public:
         size_t      _maxRingFileBytes = MAX_FILE_SIZE;
         const char *_wifiSsid         = WIFI_SSID;
         const char *_wifiPassword     = WIFI_PASSWORD;
+        const char *_mqttBrokerURL    = MQTT_BROKER_URL; 
+        const char *_nodeId           = MQTT_NODE;
     };
 
 public:
@@ -51,11 +53,13 @@ private:
     static void sensorTask(void *pvParameters);
     static void storageTask(void *pvParameters);
     static void wifiTask(void *pvParameters);
+    static void commTask(void *pvParameters);
 
 private:
     i2c_master_bus_handle_t         _i2cBusHandle = nullptr;
     adc_oneshot_unit_handle_t       _adcHandle    = nullptr;
     QueueHandle_t                   _sensorQueue  = nullptr;
+    QueueHandle_t                   _publishQueue = nullptr;
     Option                          _opt;
 };
 
